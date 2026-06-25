@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ナチュラル・ナンプレ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            /* 全体背景を【改善】少しスモーキーで品格のある落ち着いたグリーンに変更 */
+            background-color: #b1d3be;
+        }
+        /* 3x3ブロック（9マス）が直感的にわかるフォレストグリーンの極太線 */
+        .border-thick-r { border-right-width: 4px; border-right-color: #03442f; }
+        .border-thick-b { border-bottom-width: 4px; border-bottom-color: #03442f; }
+        /* 1マスごとの細い数字区切り */
+        .border-thin-r { border-right-width: 1px; border-right-color: #9bc8b1; }
+        .border-thin-b { border-bottom-width: 1px; border-bottom-color: #9bc8b1; }
+        
+        /* トーストフェードイン・アウト */
+        .toast-fade {
+            animation: fadeInOut 2.5s ease-in-out forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col items-center justify-center p-3 select-none">
+
+    <!-- アプリメインコンテナ (カード背景を【改善】しっとり馴染むナチュラルセージ [#e3f0e8] に微調整) -->
+    <main class="max-w-md w-full bg-[#e3f0e8] rounded-[32px] shadow-xl border border-emerald-900/10 overflow-hidden flex flex-col">
+        
+        <!-- ヘッダーエリア (一体型グラデーションヘッダー) -->
+        <div class="bg-gradient-to-b from-[#03513b] to-[#046a4e] text-white text-center pt-4 pb-3.5 px-4 shadow-sm">
+            <p class="text-xs text-emerald-100 font-bold flex items-center justify-center gap-1">
+                🌿 目に優しい森林浴デザインのパズルアプリ
+            </p>
+        </div>
+
+        <!-- インフォメーションバー (カプセル中級・タイマー・ミス) -->
+        <div class="px-5 py-3.5 flex justify-between items-center bg-white border-b border-emerald-100/50">
+            <div class="flex items-center">
+                <!-- カプセル状の難易度セレクトバッジ -->
+                <div class="relative bg-[#e6f4ed] text-[#03513b] font-black text-xs rounded-full px-4 py-1.5 flex items-center shadow-sm border border-emerald-100">
+                    <select id="difficultySelect" class="bg-transparent border-none font-black text-xs text-[#03513b] focus:outline-none cursor-pointer pr-1">
+                        <option value="easy">初級</option>
+                        <option value="medium" selected>中級</option>
+                        <option value="hard">上級</option>
+                        <option value="expert">最上級</option>
+                    </select>
+                </div>
+            </div>
+            <div class="font-bold text-[#03513b] text-sm flex items-center gap-1.5">
+                ⏱️ <span id="timerLabel" class="font-mono text-base font-black">00:00</span>
+            </div>
+            <div class="text-xs font-bold text-slate-500 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
+                ミス: <span id="mistakeLabel" class="text-rose-650 font-black">0</span>/3
+            </div>
+        </div>
+
+        <!-- アシスト設定セクション (トグルスイッチ) -->
+        <div class="px-5 py-3.5 bg-[#f6faf8] flex flex-col gap-3 border-b border-emerald-100/60 text-xs text-emerald-950 font-bold">
+            <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">⚠️ 自動エラーチェック（即時判定）：</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="checkAutoError" class="sr-only peer">
+                    <!-- OFF時: 立体感のあるグレーミントグリーン、ON時: 鮮やかなフォレストグリーン -->
+                    <div class="w-11 h-6 bg-emerald-100/75 border border-emerald-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:bg-[#046a4e] peer-checked:border-transparent transition-all duration-200
+                        after:content-[''] after:absolute after:top-[3px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all after:shadow-sm
+                        peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                </label>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="flex items-center gap-1">💡 同じ数字を強調（アシスト）：</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="checkHighlight" class="sr-only peer">
+                    <div class="w-11 h-6 bg-emerald-100/75 border border-emerald-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-emerald-500 peer-checked:bg-[#046a4e] peer-checked:border-transparent transition-all duration-200
+                        after:content-[''] after:absolute after:top-[3px] after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all after:shadow-sm
+                        peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                </label>
+            </div>
+        </div>
+
+        <!-- コアアクションボタン -->
+        <div class="px-4 pt-3.5 pb-3.5 grid grid-cols-3 gap-2 bg-[#f4faf6] border-b border-emerald-100/40">
+            <button id="btnCheck" class="bg-[#dcfce7]/70 hover:bg-[#dcfce7] text-[#03513b] font-extrabold py-2 px-1 rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition border border-[#bbf7d0]">
+                🔍 答え合わせ
+            </button>
+            <button id="btnSave" class="bg-[#72b7a3] hover:bg-[#63a591] text-white font-extrabold py-2 px-1 rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition">
+                💾 セーブ
+            </button>
+            <button id="btnLoad" class="bg-[#e4b281] hover:bg-[#d8a370] text-[#03513b] font-extrabold py-2 px-1 rounded-xl text-xs shadow-sm flex items-center justify-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                📂 ロード
+            </button>
+        </div>
+
+        <!-- ナンプレ盤面 (全体背景に合わせて【改善】セルの基本背景を [#f4faf6] にして白飛びを抑制) -->
+        <div class="p-4 bg-[#f4faf6] flex justify-center items-center">
+            <div class="border-[4px] border-[#03442f] p-0.5 bg-[#03442f] rounded-2xl shadow-md w-full aspect-square">
+                <div id="sudokuGrid" class="grid grid-cols-9 h-full w-full rounded-lg overflow-hidden">
+                    <!-- JSで81マス自動展開 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- ツールボタン (カプセル四角形型。数字キーパッドの上に配置) -->
+        <div class="px-4 pt-1 pb-3 grid grid-cols-4 gap-2 bg-[#f4faf6]">
+            <button id="btnUndo" class="bg-[#e6f7ef] hover:bg-[#d4f2e5] text-[#03513b] font-black py-2.5 rounded-2xl text-xs flex flex-col items-center justify-center gap-1 border border-[#cbeee0] transition shadow-sm">
+                <span class="text-base font-bold">↶</span>
+                <span>戻る</span>
+            </button>
+            <button id="btnErase" class="bg-[#e6f7ef] hover:bg-[#d4f2e5] text-[#03513b] font-black py-2.5 rounded-2xl text-xs flex flex-col items-center justify-center gap-1 border border-[#cbeee0] transition shadow-sm">
+                <span class="text-base font-bold">⌫</span>
+                <span>消去</span>
+            </button>
+            <button id="btnPencil" class="bg-[#e6f7ef] hover:bg-[#d4f2e5] text-[#03513b] font-black py-2.5 rounded-2xl text-xs flex flex-col items-center justify-center gap-1 border border-[#cbeee0] relative transition shadow-sm">
+                <span class="text-base">✏️</span>
+                <span>メモ</span>
+                <span id="pencilBadge" class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#729c8a] rounded-full"></span>
+            </button>
+            <button id="btnHint" class="bg-[#e6f7ef] hover:bg-[#d4f2e5] text-[#03513b] font-black py-2.5 rounded-2xl text-xs flex flex-col items-center justify-center gap-1 border border-[#cbeee0] transition shadow-sm">
+                <span class="text-base">💡</span>
+                <span>ヒント</span>
+            </button>
+        </div>
+
+        <!-- 数字キーパッド -->
+        <div class="px-4 pb-4 bg-[#f4faf6]">
+            <div id="keypad" class="grid grid-cols-9 gap-1.5 bg-[#eaf4ee] p-2 rounded-2xl border border-emerald-100/60 justify-items-center">
+                <!-- 1〜9の縦長ボタン。JSで動的配置 -->
+            </div>
+        </div>
+
+        <!-- フッターナビゲーション -->
+        <div class="grid grid-cols-2 text-center text-xs font-black border-t border-emerald-100/80 bg-[#f1f7f4]">
+            <button id="btnNewGame" class="py-3.5 hover:bg-[#e6f4ed] text-[#03513b] border-r border-emerald-100 flex items-center justify-center gap-1 transition">
+                ⚙️ 新ゲーム / 難易度変更
+            </button>
+            <button onclick="alert('【遊び方】\n空いているマスに1から9までの数字を入れます。\n縦の列、横の列、太線で囲まれた3x3のブロックのいずれにも同じ数字が重複して入らないように配置してください。')" class="py-3.5 hover:bg-[#e6f4ed] text-[#03513b] flex items-center justify-center gap-1 transition">
+                ❓ 解法ヒント・ルール
+            </button>
+        </div>
+    </main>
+
+    <!-- トースト通知コンテナ -->
+    <div id="toastContainer" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ゲームクリア画面 -->
+    <div id="clearModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-xl border border-emerald-100">
+            <div class="text-4xl mb-2">🎉</div>
+            <h2 class="text-xl font-black text-emerald-950">ゲームクリア！</h2>
+            <p class="text-slate-600 text-sm mt-2">素晴らしい集中力と論理的思考力でした！見事に完成です。</p>
+            <div class="bg-emerald-50 rounded-xl p-3 my-4 font-mono text-emerald-900 text-sm font-bold flex flex-col gap-1">
+                <div>タイム: <span id="modalTime">00:00</span></div>
+            </div>
+            <button id="modalCloseBtn" class="w-full bg-[#03513b] hover:bg-emerald-950 text-white font-bold py-2.5 rounded-xl transition">
+                新しく挑戦する
+            </button>
+        </div>
+    </div>
+
+    <!-- スクリプト制御ロジック -->
+    <script>
+        let solution = Array(81).fill(0);
+        let initialGrid = Array(81).fill(0);
+        let currentGrid = Array(81).fill(0);
+        let notesGrid = Array(81).fill().map(() => Array(10).fill(false));
+        
+        let selectedCell = null;
+        let isPencilMode = false;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let mistakeCount = 0;
+        let historyStack = [];
+
+        const gridEl = document.getElementById('sudokuGrid');
+        const keypadEl = document.getElementById('keypad');
+        const timerLabel = document.getElementById('timerLabel');
+        const mistakeLabel = document.getElementById('mistakeLabel');
+        const difficultySelect = document.getElementById('difficultySelect');
+        const btnPencil = document.getElementById('btnPencil');
+        const pencilBadge = document.getElementById('pencilBadge');
+        const btnUndo = document.getElementById('btnUndo');
+        const btnErase = document.getElementById('btnErase');
+        const btnHint = document.getElementById('btnHint');
+        const btnCheck = document.getElementById('btnCheck');
+        const btnSave = document.getElementById('btnSave');
+        const btnLoad = document.getElementById('btnLoad');
+        const btnNewGame = document.getElementById('btnNewGame');
+        const checkAutoError = document.getElementById('checkAutoError');
+        const checkHighlight = document.getElementById('checkHighlight');
+        const clearModal = document.getElementById('clearModal');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const toastContainer = document.getElementById('toastContainer');
+
+        const baseSolution = [
+            5,3,4,6,7,8,9,1,2,
+            6,7,2,1,9,5,3,4,8,
+            1,9,8,3,4,2,5,6,7,
+            8,5,9,7,6,1,4,2,3,
+            4,2,6,8,5,3,7,9,1,
+            7,1,3,9,2,4,8,5,6,
+            9,6,1,5,3,7,2,8,4,
+            2,8,7,4,1,9,6,3,5,
+            3,4,5,2,8,6,1,7,9
+        ];
+
+        function initApp() {
+            createGridCells();
+            createKeypadButtons();
+            startNewGame();
+            checkSavedDataExists();
+
+            difficultySelect.onchange = startNewGame;
+            btnNewGame.onclick = startNewGame;
+            btnUndo.onclick = handleUndo;
+            btnErase.onclick = () => pressNumber(0);
+            btnCheck.onclick = triggerManualCheck;
+            btnSave.onclick = saveGameData;
+            btnLoad.onclick = loadGameData;
+            btnHint.onclick = triggerHint;
+            
+            btnPencil.onclick = () => {
+                isPencilMode = !isPencilMode;
+                updatePencilUI();
+            };
+
+            checkAutoError.onchange = renderGrid;
+            checkHighlight.onchange = renderGrid;
+
+            modalCloseBtn.onclick = () => {
+                clearModal.classList.add('hidden');
+                startNewGame();
+            };
+
+            document.onkeydown = handleKeyDown;
+            updatePencilUI();
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = "bg-slate-900/95 text-emerald-100 font-extrabold px-4 py-2.5 rounded-xl shadow-md text-xs flex items-center gap-2 border border-emerald-800 toast-fade";
+            toast.innerHTML = `<span>🌿</span> ${message}`;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.remove(), 2500);
+        }
+
+        function startTimer(resumeSeconds = 0) {
+            clearInterval(timerInterval);
+            secondsElapsed = resumeSeconds;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                secondsElapsed++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const s = String(secondsElapsed % 60).padStart(2, '0');
+            timerLabel.textContent = `${m}:${s}`;
+        }
+
+        function updatePencilUI() {
+            if (isPencilMode) {
+                btnPencil.classList.remove('bg-[#e6f7ef]', 'text-[#03513b]');
+                btnPencil.classList.add('bg-[#046a4e]', 'text-white', 'border-[#03442f]');
+                pencilBadge.classList.replace('bg-[#729c8a]', 'bg-amber-300');
+            } else {
+                btnPencil.classList.add('bg-[#e6f7ef]', 'text-[#03513b]');
+                btnPencil.classList.remove('bg-[#046a4e]', 'text-white', 'border-[#03442f]');
+                pencilBadge.classList.replace('bg-amber-300', 'bg-[#729c8a]');
+            }
+        }
+
+        function createGridCells() {
+            gridEl.innerHTML = '';
+            for (let i = 0; i < 81; i++) {
+                const cell = document.createElement('div');
+                cell.className = "relative flex items-center justify-center cursor-pointer select-none font-sans text-center transition-all duration-100";
+                
+                const r = Math.floor(i / 9);
+                const c = i % 9;
+                
+                if (c === 2 || c === 5) cell.classList.add('border-thick-r');
+                else if (c !== 8) cell.classList.add('border-thin-r');
+                
+                if (r === 2 || r === 5) cell.classList.add('border-thick-b');
+                else if (r !== 8) cell.classList.add('border-thin-b');
+
+                cell.onclick = () => { selectedCell = i; renderGrid(); };
+                gridEl.appendChild(cell);
+            }
+        }
+
+        // テンキーキーパッドのボタン生成
+        function createKeypadButtons() {
+            keypadEl.innerHTML = '';
+            for (let i = 1; i <= 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = "w-full bg-[#046a4e] hover:bg-[#03513b] active:scale-95 text-white font-black py-4.5 rounded-full shadow-sm text-base transition flex flex-col items-center justify-center border border-emerald-900/10";
+                btn.textContent = i;
+                btn.id = `keypad-${i}`;
+                btn.onclick = () => pressNumber(i);
+                keypadEl.appendChild(btn);
+            }
+        }
+
+        function shuffleArray(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function startNewGame() {
+            const mapping = shuffleArray([1,2,3,4,5,6,7,8,9]);
+            solution = baseSolution.map(v => mapping[v - 1]);
+
+            const diff = difficultySelect.value;
+            let maskCount = 36;
+            if (diff === 'easy') maskCount = 30;
+            if (diff === 'hard') maskCount = 48;
+            if (diff === 'expert') maskCount = 55;
+
+            initialGrid = [...solution];
+            currentGrid = Array(81).fill(0);
+            notesGrid = Array(81).fill().map(() => Array(10).fill(false));
+            historyStack = [];
+            selectedCell = null;
+            mistakeCount = 0;
+            mistakeLabel.textContent = mistakeCount;
+
+            const indices = Array.from({length: 81}, (_, i) => i);
+            shuffleArray(indices);
+            for (let i = 0; i < maskCount; i++) {
+                initialGrid[indices[i]] = 0;
+            }
+
+            for (let i = 0; i < 81; i++) currentGrid[i] = initialGrid[i];
+
+            startTimer(0);
+            renderGrid();
+            showToast("パズルをロードしました");
+        }
+
+        function renderGrid() {
+            const autoError = checkAutoError.checked;
+            const highlightNum = checkHighlight.checked;
+            const targetNum = selectedCell !== null ? currentGrid[selectedCell] : 0;
+
+            const correctCounts = Array(10).fill(0);
+            for (let i = 0; i < 81; i++) {
+                if (currentGrid[i] === solution[i]) {
+                    correctCounts[currentGrid[i]]++;
+                }
+            }
+
+            // カプセルテンキーの状態マッピング
+            for (let n = 1; n <= 9; n++) {
+                const kpBtn = document.getElementById(`keypad-${n}`);
+                if (kpBtn) {
+                    if (correctCounts[n] === 9) {
+                        kpBtn.className = "w-full bg-[#c2f0df] hover:bg-[#a6e6cf] text-[#03513b] border-2 border-[#5ac29e] font-black py-2.5 rounded-full text-sm transition flex flex-col items-center justify-center shadow-inner";
+                        kpBtn.innerHTML = `${n}<span class="text-[8px] leading-none font-extrabold text-[#03513b]">✓完了</span>`;
+                    } else {
+                        kpBtn.className = "w-full bg-[#046a4e] hover:bg-[#03513b] text-white font-black py-4 rounded-full shadow-sm text-base transition flex items-center justify-center border border-emerald-950/20";
+                        kpBtn.textContent = n;
+                    }
+                }
+            }
+
+            let selR = -1, selC = -1;
+            if (selectedCell !== null) {
+                selR = Math.floor(selectedCell / 9);
+                selC = selectedCell % 9;
+            }
+
+            const cells = gridEl.children;
+            for (let i = 0; i < 81; i++) {
+                const cell = cells[i];
+                cell.innerHTML = '';
+                
+                const val = currentGrid[i];
+                const isInitial = initialGrid[i] !== 0;
+                const r = Math.floor(i / 9);
+                const c = i % 9;
+                const bR = Math.floor(r / 3), bC = Math.floor(c / 3);
+
+                // 【改善】真っ白を廃止し、目に優しい薄緑 [#f4faf6] を基調とした背景色に
+                let bgColor = "#f4faf6"; 
+                
+                if (selectedCell === i) {
+                    bgColor = "#a8ebd4"; // 選択中のセル：明るく澄んだ極上ミント
+                } else if (selectedCell !== null && (r === selR || c === selC || (Math.floor(selR/3) === bR && Math.floor(selC/3) === bC))) {
+                    bgColor = "#7ba38f"; // 関連する縦・横・9マスの範囲：アースグリーン
+                } else if (highlightNum && targetNum > 0 && val === targetNum) {
+                    bgColor = "#c2efdd"; // 同じ数字の強調
+                }
+                
+                // 動的スタイルを適用
+                cell.style.backgroundColor = bgColor;
+
+                // 文字（極太フォレストブラック / インディゴブルー）のレンダリング
+                if (val > 0) {
+                    const numSpan = document.createElement('span');
+                    numSpan.className = "text-xl font-sans transition-all duration-100 block w-full text-center leading-none";
+                    
+                    if (isInitial) {
+                        numSpan.className += " text-[#03231a] font-extrabold text-2xl";
+                    } else {
+                        numSpan.className += " text-[#2e516d] font-bold text-xl";
+                        if (autoError && val !== solution[i]) {
+                            numSpan.className = numSpan.className.replace("text-[#2e516d]", "text-rose-600 font-black scale-110");
+                        }
+                    }
+                    numSpan.textContent = val;
+                    cell.appendChild(numSpan);
+                } else {
+                    const notes = notesGrid[i];
+                    if (notes.some(n => n)) {
+                        const noteGrid = document.createElement('div');
+                        noteGrid.className = "grid grid-cols-3 w-full h-full p-1 text-center leading-none items-center justify-center";
+                        for (let n = 1; n <= 9; n++) {
+                            const nSpan = document.createElement('span');
+                            nSpan.className = "text-[9px] font-bold font-mono transition-all duration-75 ";
+                            
+                            // 渋いアースグリーン背景の上でもメモが見やすいように、白っぽく光るミントセージに変更
+                            if (selectedCell !== null && (r === selR || c === selC || (Math.floor(selR/3) === bR && Math.floor(selC/3) === bC))) {
+                                nSpan.className += notes[n] ? "text-white opacity-100 font-black" : "text-transparent opacity-0";
+                            } else {
+                                nSpan.className += notes[n] ? "text-slate-600 opacity-100" : "text-transparent opacity-0";
+                            }
+                            nSpan.textContent = n;
+                            noteGrid.appendChild(nSpan);
+                        }
+                        cell.appendChild(noteGrid);
+                    }
+                }
+            }
+        }
+
+        function pressNumber(num) {
+            if (selectedCell === null || initialGrid[selectedCell] !== 0) return;
+
+            pushHistory();
+
+            if (isPencilMode && num !== 0) {
+                currentGrid[selectedCell] = 0;
+                notesGrid[selectedCell][num] = !notesGrid[selectedCell][num];
+            } else {
+                if (num !== 0 && checkAutoError.checked && num !== solution[selectedCell]) {
+                    mistakeCount++;
+                    mistakeLabel.textContent = mistakeCount;
+                    if (mistakeCount >= 3) {
+                        showToast("ミスが3回に達しました ⚠️");
+                    }
+                }
+                currentGrid[selectedCell] = num;
+                notesGrid[selectedCell].fill(false);
+            }
+
+            renderGrid();
+            checkGameCompletion();
+        }
+
+        function pushHistory() {
+            historyStack.push({
+                currentGrid: [...currentGrid],
+                notesGrid: notesGrid.map(arr => [...arr])
+            });
+            if (historyStack.length > 25) historyStack.shift();
+        }
+
+        function handleUndo() {
+            if (historyStack.length === 0) return;
+            const prev = historyStack.pop();
+            currentGrid = prev.currentGrid;
+            notesGrid = prev.notesGrid;
+            renderGrid();
+        }
+
+        function triggerManualCheck() {
+            const cells = gridEl.children;
+            let hasError = false;
+
+            for (let i = 0; i < 81; i++) {
+                if (currentGrid[i] > 0 && initialGrid[i] === 0) {
+                    if (currentGrid[i] !== solution[i]) {
+                        hasError = true;
+                        const span = cells[i].querySelector('span');
+                        if (span) span.className = span.className.replace("text-[#2e516d]", "text-rose-600 font-black scale-110 animate-pulse");
+                    }
+                }
+            }
+            showToast(hasError ? "いくつか間違いが見つかりました 🔍" : "現在すべて正しい配置です！✨");
+            setTimeout(renderGrid, 2500);
+        }
+
+        function triggerHint() {
+            if (selectedCell === null) {
+                showToast("ヒントを入れたいマスを選んでください 💡");
+                return;
+            }
+            if (initialGrid[selectedCell] !== 0) return;
+            pushHistory();
+            currentGrid[selectedCell] = solution[selectedCell];
+            notesGrid[selectedCell].fill(false);
+            renderGrid();
+            showToast("正しい答えを1マス補填しました 💡");
+            checkGameCompletion();
+        }
+
+        function handleKeyDown(e) {
+            if (selectedCell === null) return;
+            if (e.key >= '1' && e.key <= '9') pressNumber(parseInt(e.key));
+            else if (e.key === '0' || e.key === 'Backspace' || e.key === 'Delete') pressNumber(0);
+            else if (e.key.toLowerCase() === 'p') { isPencilMode = !isPencilMode; updatePencilUI(); }
+            else {
+                let r = Math.floor(selectedCell / 9), c = selectedCell % 9;
+                if (e.key === 'ArrowUp') r = (r - 1 + 9) % 9;
+                else if (e.key === 'ArrowDown') r = (r + 1) % 9;
+                else if (e.key === 'ArrowLeft') c = (c - 1 + 9) % 9;
+                else if (e.key === 'ArrowRight') c = (c + 1) % 9;
+                else return;
+                selectedCell = r * 9 + c;
+                renderGrid();
+                e.preventDefault();
+            }
+        }
+
+        function checkGameCompletion() {
+            for (let i = 0; i < 81; i++) {
+                if (currentGrid[i] !== solution[i]) return;
+            }
+            clearInterval(timerInterval);
+            document.getElementById('modalTime').textContent = timerLabel.textContent;
+            clearModal.classList.remove('hidden');
+        }
+
+        function saveGameData() {
+            const state = { solution, initialGrid, currentGrid, notesGrid, secondsElapsed, mistakeCount, difficulty: difficultySelect.value };
+            try {
+                localStorage.setItem('natural_sudoku_save_v2', JSON.stringify(state));
+                btnLoad.disabled = false;
+                showToast("現在の進捗をブラウザにセーブしました 💾");
+            } catch (e) {
+                showToast("セーブデータの保存に失敗しました");
+            }
+        }
+
+        function loadGameData() {
+            const dataStr = localStorage.getItem('natural_sudoku_save_v2');
+            if (!dataStr) return;
+            try {
+                const state = JSON.parse(dataStr);
+                solution = state.solution;
+                initialGrid = state.initialGrid;
+                currentGrid = state.currentGrid;
+                notesGrid = state.notesGrid;
+                mistakeCount = state.mistakeCount || 0;
+                mistakeLabel.textContent = mistakeCount;
+                difficultySelect.value = state.difficulty || 'medium';
+                
+                selectedCell = null;
+                historyStack = [];
+                startTimer(state.secondsElapsed || 0);
+                renderGrid();
+                showToast("セーブデータから続きをロードしました 📂");
+            } catch (e) {
+                showToast("ロードに失敗しました");
+            }
+        }
+
+        function checkSavedDataExists() {
+            if (localStorage.getItem('natural_sudoku_save_v2')) {
+                btnLoad.disabled = false;
+            }
+        }
+
+        window.onload = initApp;
+    </script>
+</body>
+</html>
